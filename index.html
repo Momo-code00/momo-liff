@@ -28,12 +28,13 @@ function api(q){return fetch(API+'?'+q).then(function(r){return r.json()})}
 function closeWin(){try{if(liffOk&&liff.isInClient()){liff.closeWindow();return}}catch(e){}window.close();history.back()}
 function fail(t){$('list').innerHTML='<div class="msg">'+t+'</div>';$('send').style.display='none';$('cancel').textContent='Close'}
 function count(){var n=document.querySelectorAll('input:checked').length;$('send').disabled=!n;$('send').textContent=n?'📤 Submit for approval ('+n+')':'📤 Submit for approval'}
+function linkify(el,s){s.split(/(https?:\/\/\S+)/).forEach(function(p){if(/^https?:\/\//.test(p)){var a=document.createElement('a');a.href=p;a.textContent=/maps|goo\.gl/.test(p)?'เปิดแผนที่ ›':p;a.style.color='#1E6FD9';a.onclick=function(e){try{if(liffOk){e.preventDefault();liff.openWindow({url:p,external:true});}}catch(x){}};el.appendChild(a)}else el.appendChild(document.createTextNode(p))})}
 function render(r){
   if(!r||r.error){fail(r?r.error:'โหลดไม่สำเร็จ');return}
   DATA=r;$('title').textContent=r.title||'';$('list').innerHTML='';$('send').style.display='';
   if(M==='read'){
     $('mode').textContent='Details';
-    var d=document.createElement('div');d.className='read';d.textContent=r.body||'-';$('list').appendChild(d);
+    var d=document.createElement('div');d.className='read';linkify(d,r.body||'-');$('list').appendChild(d);
     $('cancel').textContent='Close';
     if(r.own&&r.items.length){$('send').disabled=false;$('send').textContent='✅ Update ('+r.items.length+')';$('send').onclick=function(){M='';$('send').onclick=send;render(DATA)}}
     else $('send').style.display='none';
