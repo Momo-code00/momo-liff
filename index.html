@@ -21,7 +21,8 @@ textarea{width:100%;box-sizing:border-box;height:110px;margin-top:10px;font-size
 <div class="top"><span id="mode">Update</span><div class="sub" id="title">กำลังโหลด…</div></div>
 <div class="list" id="list"><div class="msg">กำลังโหลดรายการงาน…</div></div>
 <div class="bar"><button id="cancel">Cancel</button><button id="send" disabled>📤 Submit for approval</button></div>
-<div class="ov" id="ov"><div class="box"><h3>⚠️ อนุมัติซ้ำ</h3><p id="dq"></p><p>ต้องการอนุมัติอีกครั้งหรือไม่?</p><div class="row"><button id="dno">❌ ไม่อนุมัติ</button><button id="dok">✅ อนุมัติ</button></div><button id="dun">↩️ ยกเลิกการอนุมัติ (กลับเป็นเหมือนเดิม)</button></div></div>
+<div class="ov" id="ov"><div class="box"><h3>⚠️ Duplicate approval</h3><p id="dq"></p><p>Approve this again?</p><div class="row"><button id="dno">❌ Reject</button><button id="dok">✅ Approve</button></div><button id="dun">↩️ Cancel approval (restore status)</button></div></div>
+<div class="ov" id="ov2"><div class="box"><h3>↩️ Cancel approval?</h3><p id="uq"></p><p>The date Momo saved will be removed from the file and this job will be open again.</p><div class="row"><button id="uno" style="background:#EEF0F3;color:#333">No, keep it</button><button id="uyes" style="background:#E53935;color:#fff">Yes, cancel</button></div></div></div>
 <script>
 var API='https://script.google.com/macros/s/AKfycby-mKc61mA8ltIxGrW4AcUjUjvLzAneA-A81Bb6Kknu1-fsAhGHA-422l-dJzyU389_MQ/exec';
 var LIFF_ID='2012059107-CtVtW1SW', P={}, M='', DATA=null, liffOk=false;
@@ -80,21 +81,25 @@ function manual(t){
   $('send').style.display='none';$('cancel').textContent='Close';
 }
 $('send').onclick=send;$('cancel').onclick=closeWin;
-function renderDup(r){if(!r||r.error){fail(r?r.error:'โหลดไม่สำเร็จ');return}
-  $('mode').textContent='Approve';$('title').textContent=r.title||'';$('list').innerHTML='';
+function renderDup(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}
+  DATA=r;$('mode').textContent='Approve';$('title').textContent=r.title||'';$('list').innerHTML='';
   var d=document.createElement('div');d.className='read';readBody(d,r.body||'-');$('list').appendChild(d);
-  $('dq').textContent=(r.label||'')+'\n'+(r.why||'');$('dun').style.display=r.canUndo?'block':'none';$('cancel').textContent='Close';
-  $('send').style.display='';$('send').disabled=false;$('send').textContent='⚠️ ยืนยันการอนุมัติ';$('send').onclick=function(){$('ov').className='ov on'};
+  $('dq').textContent=(r.label||'')+'\n'+(r.why||'');$('uq').textContent=r.label||'';$('dun').style.display=r.canUndo?'block':'none';$('cancel').textContent='Close';
+  $('send').style.display='';$('send').disabled=false;$('send').textContent='⚠️ Confirm approval';$('send').onclick=function(){$('ov').className='ov on'};
   $('ov').className='ov on'}
-function dupAct(a){var at='';try{if(liffOk)at=liff.getAccessToken()||''}catch(e){}
-  $('ov').className='ov';$('send').disabled=true;$('send').textContent='กำลังดำเนินการ…';
-  var back=function(t){$('send').disabled=false;$('send').textContent='⚠️ ยืนยันการอนุมัติ';$('title').textContent=t};
-  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({api:'dupact',d:P.d||'',n:P.n||'',a:a,at:at})}).then(function(x){return x.json()}).then(function(r){
-    if(!r||r.error){back(r?r.error:'ไม่สำเร็จ');return}
+function dupTok(){var at='';try{if(liffOk)at=liff.getAccessToken()||''}catch(e){}return at}
+function dupPost(o){o.at=dupTok();o.d=P.d||'';o.n=P.n||'';return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(function(x){return x.json()})}
+function dupAct(a){
+  $('ov').className='ov';$('ov2').className='ov';$('send').disabled=true;$('send').textContent='Processing…';
+  var back=function(t){$('send').disabled=false;$('send').textContent='⚠️ Confirm approval';$('title').textContent=t};
+  dupPost({api:'dupact',a:a}).then(function(r){
+    if(!r||r.error){back(r?r.error:'Failed. Please try again.');return}
     $('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
-    $('send').style.display='none';$('cancel').textContent='Close';$('title').textContent=a==='ap2'?'✅ อนุมัติแล้ว':a==='undo'?'↩️ ยกเลิกการอนุมัติแล้ว':'❌ ไม่อนุมัติ';
-  }).catch(function(){back('ส่งไม่สำเร็จ ลองใหม่อีกครั้ง')})}
-$('dok').onclick=function(){dupAct('ap2')};$('dno').onclick=function(){dupAct('dn')};$('dun').onclick=function(){dupAct('undo')};
-function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':'';if(M==='dup'){api('api=dup&d='+encodeURIComponent(P.d||'')+'&n='+encodeURIComponent(P.n||'')).then(renderDup).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
+    $('send').style.display='none';$('cancel').textContent='Close';$('title').textContent=a==='ap2'?'✅ Approved':a==='undo'?'↩️ Approval cancelled':'❌ Not approved';
+    if(a==='undo'){var n=document.createElement('div');n.className='msg';n.textContent='🔔 A notification was sent to your LINE chat.';$('list').appendChild(n)}
+  }).catch(function(){back('Could not send. Please try again.')})}
+$('dok').onclick=function(){dupAct('ap2')};$('dno').onclick=function(){dupAct('dn')};
+$('dun').onclick=function(){$('ov').className='ov';$('ov2').className='ov on'};$('uno').onclick=function(){$('ov2').className='ov';$('ov').className='ov on'};$('uyes').onclick=function(){dupAct('undo')};
+function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':'';if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
