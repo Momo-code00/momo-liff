@@ -89,12 +89,12 @@ function renderDup(r){if(!r||r.error){fail(r?r.error:'โหลดไม่ส�
 function dupAct(a){var at='';try{if(liffOk)at=liff.getAccessToken()||''}catch(e){}
   $('ov').className='ov';$('send').disabled=true;$('send').textContent='กำลังดำเนินการ…';
   var back=function(t){$('send').disabled=false;$('send').textContent='⚠️ ยืนยันการอนุมัติ';$('title').textContent=t};
-  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({api:'dupact',d:P.d||'',a:a,at:at})}).then(function(x){return x.json()}).then(function(r){
+  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({api:'dupact',d:P.d||'',n:P.n||'',a:a,at:at})}).then(function(x){return x.json()}).then(function(r){
     if(!r||r.error){back(r?r.error:'ไม่สำเร็จ');return}
     $('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
     $('send').style.display='none';$('cancel').textContent='Close';$('title').textContent=a==='ap2'?'✅ อนุมัติแล้ว':'❌ ไม่อนุมัติ';
   }).catch(function(){back('ส่งไม่สำเร็จ ลองใหม่อีกครั้ง')})}
 $('dok').onclick=function(){dupAct('ap2')};$('dno').onclick=function(){dupAct('dn')};
-function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':'';if(M==='dup'){api('api=dup&d='+encodeURIComponent(P.d||'')).then(renderDup).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
+function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':'';if(M==='dup'){api('api=dup&d='+encodeURIComponent(P.d||'')+'&n='+encodeURIComponent(P.n||'')).then(renderDup).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
