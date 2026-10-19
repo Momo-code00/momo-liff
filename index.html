@@ -15,11 +15,13 @@ button{padding:14px;border:0;border-radius:10px;font-size:16px;font-weight:700}
 .msg{padding:24px 16px;text-align:center;color:#555;font-size:15px;line-height:1.5}
 .read{white-space:pre-wrap;background:#fff;border-radius:10px;padding:14px;font-size:15px;line-height:1.55;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 table.pe{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:15px;white-space:normal}table.pe th{font-size:12px;color:#8A8F98;font-weight:400;text-align:center;padding:4px 2px;border-bottom:1px solid #E3E6EA}table.pe th:first-child,table.pe td:first-child{text-align:left}table.pe td{text-align:center;padding:5px 2px}table.pe .r{color:#E53935;font-weight:700}table.pe .o{color:#F57C00;font-weight:700}table.pe .z{color:#B0B5BD}table.pe small{font-size:11px;margin-left:4px}table.pe .g{color:#06C755}hr.sub{border:0;border-top:2px dashed #AEB4BD;margin:14px 0 6px}.sec{margin:6px 0 2px;white-space:normal}
+.ov{position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9;padding:16px;box-sizing:border-box}.ov.on{display:flex}.box{background:#fff;border-radius:14px;padding:18px 16px;max-width:360px;width:100%;box-shadow:0 6px 24px rgba(0,0,0,.2)}.box h3{margin:0 0 8px;color:#C25E00;font-size:17px}.box p{margin:6px 0;font-size:15px;line-height:1.45;white-space:pre-wrap}.box .row{display:flex;gap:8px;margin-top:14px}.box .row button{flex:1}#dok{background:#06C755;color:#fff}#dno{background:#E53935;color:#fff}
 textarea{width:100%;box-sizing:border-box;height:110px;margin-top:10px;font-size:14px}
 </style></head><body>
 <div class="top"><span id="mode">Update</span><div class="sub" id="title">กำลังโหลด…</div></div>
 <div class="list" id="list"><div class="msg">กำลังโหลดรายการงาน…</div></div>
 <div class="bar"><button id="cancel">Cancel</button><button id="send" disabled>📤 Submit for approval</button></div>
+<div class="ov" id="ov"><div class="box"><h3>⚠️ อนุมัติซ้ำ</h3><p id="dq"></p><p>ต้องการอนุมัติอีกครั้งหรือไม่?</p><div class="row"><button id="dno">❌ ไม่อนุมัติ</button><button id="dok">✅ อนุมัติ</button></div></div></div>
 <script>
 var API='https://script.google.com/macros/s/AKfycby-mKc61mA8ltIxGrW4AcUjUjvLzAneA-A81Bb6Kknu1-fsAhGHA-422l-dJzyU389_MQ/exec';
 var LIFF_ID='2012059107-CtVtW1SW', P={}, M='', DATA=null, liffOk=false;
@@ -78,6 +80,21 @@ function manual(t){
   $('send').style.display='none';$('cancel').textContent='Close';
 }
 $('send').onclick=send;$('cancel').onclick=closeWin;
-function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':'';api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
+function renderDup(r){if(!r||r.error){fail(r?r.error:'โหลดไม่สำเร็จ');return}
+  $('mode').textContent='Approve';$('title').textContent=r.title||'';$('list').innerHTML='';
+  var d=document.createElement('div');d.className='read';readBody(d,r.body||'-');$('list').appendChild(d);
+  $('dq').textContent=(r.label||'')+'\n'+(r.why||'');$('cancel').textContent='Close';
+  $('send').style.display='';$('send').disabled=false;$('send').textContent='⚠️ ยืนยันการอนุมัติ';$('send').onclick=function(){$('ov').className='ov on'};
+  $('ov').className='ov on'}
+function dupAct(a){var at='';try{if(liffOk)at=liff.getAccessToken()||''}catch(e){}
+  $('ov').className='ov';$('send').disabled=true;$('send').textContent='กำลังดำเนินการ…';
+  var back=function(t){$('send').disabled=false;$('send').textContent='⚠️ ยืนยันการอนุมัติ';$('title').textContent=t};
+  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({api:'dupact',d:P.d||'',a:a,at:at})}).then(function(x){return x.json()}).then(function(r){
+    if(!r||r.error){back(r?r.error:'ไม่สำเร็จ');return}
+    $('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
+    $('send').style.display='none';$('cancel').textContent='Close';$('title').textContent=a==='ap2'?'✅ อนุมัติแล้ว':'❌ ไม่อนุมัติ';
+  }).catch(function(){back('ส่งไม่สำเร็จ ลองใหม่อีกครั้ง')})}
+$('dok').onclick=function(){dupAct('ap2')};$('dno').onclick=function(){dupAct('dn')};
+function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':'';if(M==='dup'){api('api=dup&d='+encodeURIComponent(P.d||'')).then(renderDup).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
