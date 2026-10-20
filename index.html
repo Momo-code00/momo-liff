@@ -88,7 +88,7 @@ function renderDup(r){if(!r||r.error){fail(r?r.error:'Could not load. Please clo
   $('send').style.display='';$('send').disabled=false;$('send').textContent='⚠️ Confirm approval';$('send').onclick=function(){$('ov').className='ov on'};
   $('ov').className='ov on'}
 function dupTok(){var at='';try{if(liffOk)at=liff.getAccessToken()||''}catch(e){}return at}
-function dupPost(o){o.at=dupTok();o.d=P.d||'';o.n=P.n||'';return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(function(x){return x.json()})}
+function dupPost(o){o.at=dupTok();o.d=P.d||'';o.n=P.n||'';try{var c=liffOk&&liff.getContext();if(c){o.ctx=c.type||'';o.cg=c.groupId||c.roomId||''}}catch(e){}return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(function(x){return x.json()})}
 function dupAct(a){
   $('ov').className='ov';$('ov2').className='ov';$('send').disabled=true;$('send').textContent='Processing…';
   var back=function(t){$('send').disabled=false;$('send').textContent='⚠️ Confirm approval';$('title').textContent=t};
@@ -96,7 +96,10 @@ function dupAct(a){
     if(!r||r.error){back(r?r.error:'Failed. Please try again.');return}
     $('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
     $('send').style.display='none';$('cancel').textContent='Close';$('title').textContent=a==='ap2'?'✅ Approved':a==='undo'?'↩️ Approval cancelled':'❌ Not approved';
-    if(a==='undo'){var n=document.createElement('div');n.className='msg';n.textContent='🔔 A notification was sent to your LINE chat.';$('list').appendChild(n)}
+    var n=document.createElement('div');n.className='msg';$('list').appendChild(n);
+    var inC=false;try{inC=liffOk&&liff.isInClient()}catch(e){}
+    if(r.note&&inC){n.textContent='🔔 Posting the notification to this chat…';liff.sendMessages([{type:'text',text:'🔔 '+r.note.short+'\nรหัส '+r.note.code}]).then(function(){n.textContent='🔔 Notification posted to this chat.'}).catch(function(){n.textContent='⚠️ Could not post the notification to this chat.'})}
+    else n.textContent='🔔 Notification sent.';
   }).catch(function(){back('Could not send. Please try again.')})}
 $('dok').onclick=function(){dupAct('ap2')};$('dno').onclick=function(){dupAct('dn')};
 $('dun').onclick=function(){$('ov').className='ov';$('ov2').className='ov on'};$('uno').onclick=function(){$('ov2').className='ov';$('ov').className='ov on'};$('uyes').onclick=function(){dupAct('undo')};
