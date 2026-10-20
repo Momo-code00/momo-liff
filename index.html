@@ -89,9 +89,15 @@ function renderDup(r){if(!r||r.error){fail(r?r.error:'Could not load. Please clo
   $('ov').className='ov on'}
 function dupTok(){var at='';try{if(liffOk)at=liff.getAccessToken()||''}catch(e){}return at}
 function dupPost(o){o.at=dupTok();o.d=P.d||'';o.n=P.n||'';try{var c=liffOk&&liff.getContext();if(c){o.ctx=c.type||'';o.cg=c.groupId||c.roomId||''}}catch(e){}return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(function(x){return x.json()})}
+function inClient(){try{return liffOk&&liff.isInClient()}catch(e){return false}}
+function goSend(r,onFail){var w={ap:'✅ Approve: ',ap2:'✅ Approve again: ',rj:'❌ Reject: ',dn:'❌ Reject: ',undo:'↩️ Cancel approval: '}[r.act]||'✅ Approve: ';
+  $('title').textContent=r.act==='rj'||r.act==='dn'?'❌ Not approved':r.act==='undo'?'↩️ Cancelling approval…':'✅ Approved';$('send').style.display='none';$('cancel').textContent='Close';
+  $('list').innerHTML='<div class="msg">Posting to this chat… Momo will reply right away.</div>';
+  liff.sendMessages([{type:'text',text:w+r.label+'\nรหัส '+r.code}]).then(function(){try{liff.closeWindow()}catch(e){}}).catch(function(){onFail()})}
 function dupAct(a){
   $('ov').className='ov';$('ov2').className='ov';$('send').disabled=true;$('send').textContent='Processing…';
   var back=function(t){$('send').disabled=false;$('send').textContent='⚠️ Confirm approval';$('title').textContent=t};
+  if(inClient()){dupPost({api:'dupgo',a:a}).then(function(r){if(!r||r.error){back(r?r.error:'Failed. Please try again.');return}goSend(r,function(){fail('⚠️ Could not post to this chat. Please try again.')})}).catch(function(){back('Could not send. Please try again.')});return}
   dupPost({api:'dupact',a:a}).then(function(r){
     if(!r||r.error){back(r?r.error:'Failed. Please try again.');return}
     $('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
@@ -107,6 +113,7 @@ function apNow(){$('mode').textContent='Approve';$('title').textContent='Process
   dupPost({api:'apnow',a:P.a==='rj'?'rj':'ap'}).then(function(r){
     if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}
     if(r.dup){P.n=r.n;renderDup(r);return}
+    if(r.go){if(inClient())goSend(r,function(){fail('⚠️ Could not post to this chat. Please close and tap the button again.')});else fail('Please open this from the LINE app.');return}
     $('title').textContent=r.act==='rj'?'❌ Not approved':(/^⏳/.test(r.text||'')?'⏳ Approved':'✅ Approved');
     $('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
     var n=document.createElement('div');n.className='msg';$('list').appendChild(n);
