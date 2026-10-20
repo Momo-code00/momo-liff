@@ -103,6 +103,17 @@ function dupAct(a){
   }).catch(function(){back('Could not send. Please try again.')})}
 $('dok').onclick=function(){dupAct('ap2')};$('dno').onclick=function(){dupAct('dn')};
 $('dun').onclick=function(){$('ov').className='ov';$('ov2').className='ov on'};$('uno').onclick=function(){$('ov2').className='ov';$('ov').className='ov on'};$('uyes').onclick=function(){dupAct('undo')};
-function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':'';if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
+function apNow(){$('mode').textContent='Approve';$('title').textContent='Processing…';$('send').style.display='none';$('cancel').textContent='Close';$('list').innerHTML='<div class="msg">Processing…</div>';
+  dupPost({api:'apnow',a:P.a==='rj'?'rj':'ap'}).then(function(r){
+    if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}
+    if(r.dup){P.n=r.n;renderDup(r);return}
+    $('title').textContent=r.act==='rj'?'❌ Not approved':(/^⏳/.test(r.text||'')?'⏳ Approved':'✅ Approved');
+    $('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
+    var n=document.createElement('div');n.className='msg';$('list').appendChild(n);
+    var inC=false;try{inC=liffOk&&liff.isInClient()}catch(e){}
+    if(r.note&&inC){n.textContent='🔔 Posting the result to this chat…';liff.sendMessages([{type:'text',text:'🔔 '+r.note.short+'\nรหัส '+r.note.code}]).then(function(){n.textContent='🔔 Posted. Closing…';setTimeout(function(){try{liff.closeWindow()}catch(e){}},1200)}).catch(function(){n.textContent='⚠️ Could not post the result to this chat.'})}
+    else n.textContent='🔔 Notification sent.';
+  }).catch(function(){fail('Could not load. Please close and open again.')})}
+function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':P.m==='ap'?'ap':'';if(M==='ap'){apNow();return}if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
