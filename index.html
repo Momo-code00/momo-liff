@@ -122,7 +122,20 @@ function apNow(){$('mode').textContent='Approve';$('title').textContent='Process
     if(r.note&&inC){n.textContent='🔔 Posting the result to this chat…';liff.sendMessages([{type:'text',text:'🔔 '+r.note.short+'\nรหัส '+r.note.code}]).then(function(){n.textContent='🔔 Posted. Closing…';setTimeout(function(){try{liff.closeWindow()}catch(e){}},1200)}).catch(function(){n.textContent='⚠️ Could not post the result to this chat.'})}
     else n.textContent='🔔 Notification sent.';
   }).catch(function(){fail('Could not load. Please close and open again.')})}
-var FT={sv:'Site survey',so:'Solar project',ev:'EV project',cp:'Complaint',ms:'Milestones',dc:'Documents',del:'Delete site'},OPT=null;
+var FT={sv:'Site survey',so:'Solar project',ev:'EV project',cp:'Complaint',ms:'Milestones',dc:'Documents',del:'Delete site',rn:'Rename site'},OPT=null;
+var RN=null;
+function rnBuild(){var box=$('list');box.innerHTML='';var body=document.createElement('div');
+  projPick(box,function(v){RN=null;fcheck();if(!v){body.innerHTML='';return}body.innerHTML='<div class="msg">Checking the file…</div>';
+    dupPost({api:'frn',project:v}).then(function(r){if(!r||r.error){body.innerHTML='<div class="msg">'+hesc(r?r.error:'Could not load.')+'</div>';return}RN=r;rnFields(body)}).catch(function(){body.innerHTML='<div class="msg">Could not load. Please try again.</div>'})});
+  box.appendChild(body);$('send').style.display='';$('send').onclick=fsubmit;fcheck()}
+function rnFields(body){var r=RN;body.innerHTML='';var w=document.createElement('div');w.className='fld';
+  w.innerHTML='<div class="fl">New name *</div>';var el=document.createElement('input');el.type='text';el.id='f_name';el.value=r.project;el.oninput=fcheck;w.appendChild(el);
+  if(r.ev){var h=document.createElement('div');h.className='fh';h.textContent='"EV " stays at the front of the name.';w.appendChild(h)}body.appendChild(w);
+  var c=document.createElement('div');c.className='fld';
+  if(!r.total){c.innerHTML='<div class="fl">Not found</div><div class="fh">"'+hesc(r.project)+'" was not found in any sheet.</div>';body.appendChild(c);fcheck();return}
+  var s='<div class="fl">Will be renamed in '+hesc(r.file)+'</div>';
+  r.items.forEach(function(it){s+='<div class="drow"><div class="dn">'+hesc(it.sh)+'</div><div class="dn" style="flex:0 0 auto;text-align:right;color:#555">'+(it.auto?'row '+it.rows[0]+' · follows Projects':'row'+(it.rows.length>1?'s ':' ')+it.rows.join(', '))+'</div></div>'});
+  s+='<div class="fh" style="margin-top:8px">All sheets are renamed together, so they stay matched.</div>';c.innerHTML=s;body.appendChild(c);el.focus();fcheck()}
 var DEL=null;
 function hesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
 function delBuild(){var box=$('list');box.innerHTML='';var body=document.createElement('div');
@@ -208,19 +221,19 @@ function buildForm(){var t=P.t,o=OPT,box=$('list');box.innerHTML='';
     [].forEach.call(lb0.querySelectorAll('#pf b'),function(b){b.onclick=function(){cfill(b.getAttribute('data-f'))}});cfill('')}
   if(t==='cp')$('f_project').addEventListener('change',function(){var p=(o.projects||[]).filter(function(x){return x.n===$('f_project').value})[0];if(p&&p.pe&&p.pe!=='-')$('f_owner').value=p.pe;fcheck()});
   $('send').style.display='';$('send').textContent='💾 Save to file';$('send').onclick=fsubmit;fcheck()}
-function fvals(){if(P.t==='del')return{project:($('f_project')||{}).value||'',confirm:DEL&&$('d_ok')&&$('d_ok').checked?DEL.project:''};if(P.t==='ms'||P.t==='dc')return{project:($('f_project')||{}).value||'',ch:P.t==='ms'?msChanges():dcChanges()};var v={};fdefs(P.t,OPT).forEach(function(d){if(!d.ro)v[d.k]=($('f_'+d.k).value||'').trim()});return v}
-function fcheck(){if(P.t==='del'){var ok=!!(DEL&&DEL.total&&$('d_ok')&&$('d_ok').checked&&($('f_project')||{}).value===DEL.project);$('send').disabled=!ok;$('send').textContent='🗑️ Delete';return ok}if(P.t==='ms'||P.t==='dc'){var c=fvals(),k=Object.keys(c.ch).length;$('send').disabled=!(c.project&&k);$('send').textContent=k?'💾 Save to file ('+k+')':'💾 Save to file';return!$('send').disabled}var v=fvals(),ok=fdefs(P.t,OPT).every(function(d){return!d.req||d.ro||v[d.k]});$('send').disabled=!ok;return ok}
-function fsubmit(){if(!fcheck())return;var v=fvals();$('send').disabled=true;$('send').textContent=P.t==='del'?'Deleting…':'Saving…';
-  var back=function(t){$('send').disabled=false;$('send').textContent=P.t==='del'?'🗑️ Delete':'💾 Save to file';$('title').textContent=t};
+function fvals(){if(P.t==='rn')return{project:($('f_project')||{}).value||'',name:(($('f_name')||{}).value||'').trim()};if(P.t==='del')return{project:($('f_project')||{}).value||'',confirm:DEL&&$('d_ok')&&$('d_ok').checked?DEL.project:''};if(P.t==='ms'||P.t==='dc')return{project:($('f_project')||{}).value||'',ch:P.t==='ms'?msChanges():dcChanges()};var v={};fdefs(P.t,OPT).forEach(function(d){if(!d.ro)v[d.k]=($('f_'+d.k).value||'').trim()});return v}
+function fcheck(){if(P.t==='rn'){var nm=(($('f_name')||{}).value||'').trim(),ok=!!(RN&&RN.total&&nm&&nm!==RN.project&&($('f_project')||{}).value===RN.project);$('send').disabled=!ok;$('send').textContent='✏️ Rename';return ok}if(P.t==='del'){var ok=!!(DEL&&DEL.total&&$('d_ok')&&$('d_ok').checked&&($('f_project')||{}).value===DEL.project);$('send').disabled=!ok;$('send').textContent='🗑️ Delete';return ok}if(P.t==='ms'||P.t==='dc'){var c=fvals(),k=Object.keys(c.ch).length;$('send').disabled=!(c.project&&k);$('send').textContent=k?'💾 Save to file ('+k+')':'💾 Save to file';return!$('send').disabled}var v=fvals(),ok=fdefs(P.t,OPT).every(function(d){return!d.req||d.ro||v[d.k]});$('send').disabled=!ok;return ok}
+function fsubmit(){if(!fcheck())return;var v=fvals();$('send').disabled=true;$('send').textContent=P.t==='del'?'Deleting…':P.t==='rn'?'Renaming…':'Saving…';
+  var back=function(t){$('send').disabled=false;$('send').textContent=P.t==='del'?'🗑️ Delete':P.t==='rn'?'✏️ Rename':'💾 Save to file';$('title').textContent=t};
   if(inClient()){dupPost({api:'fgo',t:P.t,f:v}).then(function(r){if(!r||r.error){back('⚠️ '+(r?r.error:'Failed. Please try again.'));return}
       $('list').innerHTML='<div class="msg">Posting to this chat… Momo will save it and reply right away.</div>';$('send').style.display='none';$('cancel').textContent='Close';
       liff.sendMessages([{type:'text',text:'📝 '+r.label+'\nรหัส '+r.code}]).then(function(){try{liff.closeWindow()}catch(e){}}).catch(function(){fail('⚠️ Could not post to this chat. Please try again.')})}).catch(function(){back('Could not send. Please try again.')});return}
   dupPost({api:'fsave',t:P.t,f:v}).then(function(r){if(!r||r.error){back('⚠️ '+(r?r.error:'Failed. Please try again.'));return}
-    $('title').textContent=r.ok?(P.t==='del'?'✅ Deleted':'✅ Saved'):'❌ Not saved';$('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
+    $('title').textContent=r.ok?(P.t==='del'?'✅ Deleted':P.t==='rn'?'✅ Renamed':'✅ Saved'):'❌ Not saved';$('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
     if(r.ok){$('send').style.display='none';$('cancel').textContent='Close'}else back(r.ok?'':'❌ Not saved')}).catch(function(){back('Could not send. Please try again.')})}
-function formStart(){try{if(liffOk&&!liff.isInClient()&&!liff.isLoggedIn()){$('list').innerHTML='<div class="msg">Signing in with LINE…</div>';liff.login({redirectUri:location.href});return}}catch(e){}$('mode').textContent=P.t==='del'?'Delete':'New entry';$('title').textContent=FT[P.t]||'';$('send').style.display='none';$('cancel').textContent='Cancel';$('list').innerHTML='<div class="msg">Loading…</div>';
+function formStart(){try{if(liffOk&&!liff.isInClient()&&!liff.isLoggedIn()){$('list').innerHTML='<div class="msg">Signing in with LINE…</div>';liff.login({redirectUri:location.href});return}}catch(e){}$('mode').textContent=P.t==='del'?'Delete':P.t==='rn'?'Rename':'New entry';$('title').textContent=FT[P.t]||'';$('send').style.display='none';$('cancel').textContent='Cancel';$('list').innerHTML='<div class="msg">Loading…</div>';
   if(!FT[P.t]){fail('Unknown form type.');return}
-  dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];if(P.t==='ms')msBuild();else if(P.t==='dc')dcBuild();else if(P.t==='del')delBuild();else buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
+  dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];if(P.t==='ms')msBuild();else if(P.t==='dc')dcBuild();else if(P.t==='del')delBuild();else if(P.t==='rn')rnBuild();else buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
 function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':P.m==='ap'?'ap':P.m==='form'?'form':'';if(M==='form'){formStart();return}if(M==='ap'){apNow();return}if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
