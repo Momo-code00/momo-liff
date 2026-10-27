@@ -17,7 +17,7 @@ button{padding:14px;border:0;border-radius:10px;font-size:16px;font-weight:700}
 table.pe{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:15px;white-space:normal}table.pe th{font-size:12px;color:#8A8F98;font-weight:400;text-align:center;padding:4px 2px;border-bottom:1px solid #E3E6EA}table.pe th:first-child,table.pe td:first-child{text-align:left}table.pe td{text-align:center;padding:5px 2px}table.pe .r{color:#E53935;font-weight:700}table.pe .o{color:#F57C00;font-weight:700}table.pe .z{color:#B0B5BD}table.pe small{font-size:11px;margin-left:4px}table.pe .g{color:#06C755}hr.sub{border:0;border-top:2px dashed #AEB4BD;margin:14px 0 6px}.sec{margin:6px 0 2px;white-space:normal}
 .ov{position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9;padding:16px;box-sizing:border-box}.ov.on{display:flex}.box{background:#fff;border-radius:14px;padding:18px 16px;max-width:360px;width:100%;box-shadow:0 6px 24px rgba(0,0,0,.2)}.box h3{margin:0 0 8px;color:#C25E00;font-size:17px}.box p{margin:6px 0;font-size:15px;line-height:1.45;white-space:pre-wrap}.box .row{display:flex;gap:8px;margin-top:14px}.box .row button{flex:1}#dok{background:#06C755;color:#fff}#dno{background:#E53935;color:#fff}#dun{display:none;width:100%;margin-top:8px;background:#EEF0F3;color:#333}
 textarea{width:100%;box-sizing:border-box;height:110px;margin-top:10px;font-size:14px}
-.fld{background:#fff;border-radius:10px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}.fl{font-size:13px;color:#555;margin-bottom:6px;font-weight:600}.fld input,.fld select,.fld textarea.fa{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border:1px solid #D5D9DE;border-radius:8px;background:#fff;margin:0;height:auto}.fld textarea.fa{height:90px}.fld input[readonly]{background:#F1F3F5;color:#666}.fh{font-size:12px;color:#8A8F98;margin-top:4px}
+.fld{background:#fff;border-radius:10px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}.fl{font-size:13px;color:#555;margin-bottom:6px;font-weight:600}.fld input,.fld select,.fld textarea.fa{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border:1px solid #D5D9DE;border-radius:8px;background:#fff;margin:0;height:auto}.fld textarea.fa{height:90px;font-family:inherit}.fld input[readonly]{background:#F1F3F5;color:#666}.fh{font-size:12px;color:#8A8F98;margin-top:4px}
 </style></head><body>
 <div class="top"><span id="mode">Update</span><div class="sub" id="title">กำลังโหลด…</div></div>
 <div class="list" id="list"><div class="msg">กำลังโหลดรายการงาน…</div></div>
@@ -122,7 +122,30 @@ function apNow(){$('mode').textContent='Approve';$('title').textContent='Process
     if(r.note&&inC){n.textContent='🔔 Posting the result to this chat…';liff.sendMessages([{type:'text',text:'🔔 '+r.note.short+'\nรหัส '+r.note.code}]).then(function(){n.textContent='🔔 Posted. Closing…';setTimeout(function(){try{liff.closeWindow()}catch(e){}},1200)}).catch(function(){n.textContent='⚠️ Could not post the result to this chat.'})}
     else n.textContent='🔔 Notification sent.';
   }).catch(function(){fail('Could not load. Please close and open again.')})}
-var FT={sv:'Site survey',so:'Solar project',ev:'EV project',cp:'Complaint'},OPT=null;
+var FT={sv:'Site survey',so:'Solar project',ev:'EV project',cp:'Complaint',ms:'Milestones'},OPT=null;
+var MS=null;
+function msBuild(){var box=$('list');box.innerHTML='';var w=document.createElement('div');w.className='fld';w.innerHTML='<div class="fl">Project *</div>';var sel=document.createElement('select');sel.id='f_project';
+  [''].concat((OPT.projects||[]).map(function(p){return p.n})).forEach(function(v){var op=document.createElement('option');op.value=v;op.textContent=v||'— choose —';sel.appendChild(op)});
+  w.appendChild(sel);box.appendChild(w);var body=document.createElement('div');body.id='msbody';box.appendChild(body);
+  sel.onchange=function(){MS=null;fcheck();if(!sel.value){body.innerHTML='';return}body.innerHTML='<div class="msg">Loading milestones…</div>';
+    dupPost({api:'fms',project:sel.value}).then(function(r){if(!r||r.error){body.innerHTML='<div class="msg">'+String(r?r.error:'Could not load.').replace(/</g,'&lt;')+'</div>';return}MS=r;msFields(body)}).catch(function(){body.innerHTML='<div class="msg">Could not load. Please try again.</div>'})};
+  $('send').style.display='';$('send').textContent='💾 Save to file';$('send').onclick=fsubmit;fcheck()}
+function msInput(w,id,type,val,ro,list){var el=document.createElement('input');el.type=type;el.id=id;el.value=val||'';if(ro){el.readOnly=true;el.disabled=type==='date'}
+  if(list){var dl=document.createElement('datalist');dl.id='dl_'+id;list.forEach(function(v){var op=document.createElement('option');op.value=v;dl.appendChild(op)});w.appendChild(dl);el.setAttribute('list','dl_'+id)}
+  el.oninput=el.onchange=fcheck;w.appendChild(el);return el}
+function msFields(body){var r=MS,F=r.fields;body.innerHTML='';
+  var info=document.createElement('div');info.className='fh';info.style.margin='2px 4px 6px';info.textContent='Sheet: '+r.sheet+' · row '+r.row+' — only changed fields are saved.';body.appendChild(info);
+  [['pe','Project Engineer','text',OPT.pes],['model','Model','text'],['cap','Capacity','text'],['contract','Contract date','date']].forEach(function(d){var f=F[d[0]];if(!f)return;var w=document.createElement('div');w.className='fld';
+    w.innerHTML='<div class="fl">'+d[1]+(f.ro?' <span style="font-weight:400;color:#8A8F98">(formula)</span>':'')+'</div>';msInput(w,'m_'+d[0],d[2],f.v,f.ro,d[3]);body.appendChild(w)});
+  r.ms.forEach(function(m){var w=document.createElement('div');w.className='fld';var na=m.plan==='N/A'||m.actual==='N/A';
+    w.innerHTML='<div class="fl" style="display:flex;justify-content:space-between;align-items:center"><span>'+m.name.replace(/</g,'&lt;')+'</span><label style="all:unset;font-size:13px;font-weight:400;color:#555;display:flex;gap:6px;align-items:center"><input type="checkbox" id="m_n'+m.i+'" style="width:18px;height:18px"'+(na?' checked':'')+(m.ro?' disabled':'')+'>N/A</label></div><div style="display:flex;gap:8px"><div style="flex:1"><div class="fh" style="margin:0 0 4px">Plan</div><span id="w_p'+m.i+'"></span></div><div style="flex:1"><div class="fh" style="margin:0 0 4px">Actual</div><span id="w_a'+m.i+'"></span></div></div>';
+    body.appendChild(w);var p=msInput(w.querySelector('#w_p'+m.i),'m_p'+m.i,'date',m.plan==='N/A'?'':m.plan,m.ro),a=msInput(w.querySelector('#w_a'+m.i),'m_a'+m.i,'date',m.actual==='N/A'?'':m.actual,m.ro);
+    var cb=w.querySelector('#m_n'+m.i),sync=function(){p.disabled=a.disabled=cb.checked||m.ro;fcheck()};cb.onchange=sync;sync()});
+  var w=document.createElement('div');w.className='fld';w.innerHTML='<div class="fl">Delay issue / note</div>';var t=document.createElement('textarea');t.className='fa';t.id='m_note';t.value=F.note?F.note.v:'';t.oninput=fcheck;w.appendChild(t);body.appendChild(w);fcheck()}
+function msChanges(){if(!MS)return{};var ch={},F=MS.fields;
+  ['pe','model','cap','contract','note'].forEach(function(k){var el=$('m_'+k);if(!el||(F[k]&&F[k].ro))return;var v=(el.value||'').trim();if(v!==String(F[k]?F[k].v:''))ch[k]=v});
+  MS.ms.forEach(function(m){if(m.ro||!$('m_n'+m.i))return;var na=$('m_n'+m.i).checked,p=na?'N/A':$('m_p'+m.i).value,a=na?'N/A':$('m_a'+m.i).value;if(p!==(m.plan||''))ch['p'+m.i]=p;if(a!==(m.actual||''))ch['a'+m.i]=a});return ch}
+
 function fdefs(t,o){var pes=o.pes||[],L=o.lists,pj=o.projects||[];
   if(t==='sv')return[{k:'name',l:'Site name',req:1,ph:'e.g. Ratchapruek Hospital SOLAR ROOFTOP 123.84 kWp'},{k:'place',l:'Location / province',ph:'e.g. Khon Kaen'},{k:'map',l:'Google Maps link',ph:'https://maps.app.goo.gl/…'},{k:'type',l:'Type',sel:L.type,req:1},{k:'pe',l:'Surveyor',list:pes,req:1},{k:'start',l:'Start date',date:1,req:1,def:o.today},{k:'finish',l:'Finish date',date:1,hint:'Leave blank = same day'}];
   if(t==='so'||t==='ev')return[{k:'name',l:'Project name',req:1,ph:t==='ev'?'e.g. EV Ramintra Soi 127 ("EV " added automatically)':'e.g. Khamriang Subdistrict Municipality'},{k:'customer',l:'Customer',ph:'Blank = same as project name'},{k:'contractor',l:'Contractor',list:['PM Solar','CS'],def:t==='ev'?'CS':'PM Solar'},{k:'pe',l:'PE / Owner',list:pes,req:1},{k:'kwp',l:'kWp',num:1},{k:'value',l:'Contract value (THB)',num:1},{k:'sign',l:'Sign date',date:1},{k:'cod',l:'Target COD',date:1},{k:'status',l:'Status',sel:L.status,def:'Planning'}];
@@ -137,8 +160,8 @@ function buildForm(){var t=P.t,o=OPT,box=$('list');box.innerHTML='';
     if(d.hint){var h=document.createElement('div');h.className='fh';h.textContent=d.hint;w.appendChild(h)}box.appendChild(w)});
   if(t==='cp')$('f_project').addEventListener('change',function(){var p=(o.projects||[]).filter(function(x){return x.n===$('f_project').value})[0];if(p&&p.pe&&p.pe!=='-')$('f_owner').value=p.pe;fcheck()});
   $('send').style.display='';$('send').textContent='💾 Save to file';$('send').onclick=fsubmit;fcheck()}
-function fvals(){var v={};fdefs(P.t,OPT).forEach(function(d){if(!d.ro)v[d.k]=($('f_'+d.k).value||'').trim()});return v}
-function fcheck(){var v=fvals(),ok=fdefs(P.t,OPT).every(function(d){return!d.req||d.ro||v[d.k]});$('send').disabled=!ok;return ok}
+function fvals(){if(P.t==='ms')return{project:($('f_project')||{}).value||'',ch:msChanges()};var v={};fdefs(P.t,OPT).forEach(function(d){if(!d.ro)v[d.k]=($('f_'+d.k).value||'').trim()});return v}
+function fcheck(){if(P.t==='ms'){var c=fvals(),k=Object.keys(c.ch).length;$('send').disabled=!(c.project&&k);$('send').textContent=k?'💾 Save to file ('+k+')':'💾 Save to file';return!$('send').disabled}var v=fvals(),ok=fdefs(P.t,OPT).every(function(d){return!d.req||d.ro||v[d.k]});$('send').disabled=!ok;return ok}
 function fsubmit(){if(!fcheck())return;var v=fvals();$('send').disabled=true;$('send').textContent='Saving…';
   var back=function(t){$('send').disabled=false;$('send').textContent='💾 Save to file';$('title').textContent=t};
   if(inClient()){dupPost({api:'fgo',t:P.t,f:v}).then(function(r){if(!r||r.error){back('⚠️ '+(r?r.error:'Failed. Please try again.'));return}
@@ -149,7 +172,7 @@ function fsubmit(){if(!fcheck())return;var v=fvals();$('send').disabled=true;$('
     if(r.ok){$('send').style.display='none';$('cancel').textContent='Close'}else back(r.ok?'':'❌ Not saved')}).catch(function(){back('Could not send. Please try again.')})}
 function formStart(){$('mode').textContent='New entry';$('title').textContent=FT[P.t]||'';$('send').style.display='none';$('cancel').textContent='Cancel';$('list').innerHTML='<div class="msg">Loading…</div>';
   if(!FT[P.t]){fail('Unknown form type.');return}
-  dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
+  dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];if(P.t==='ms')msBuild();else buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
 function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':P.m==='ap'?'ap':P.m==='form'?'form':'';if(M==='form'){formStart();return}if(M==='ap'){apNow();return}if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
