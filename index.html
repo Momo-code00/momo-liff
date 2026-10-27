@@ -17,7 +17,7 @@ button{padding:14px;border:0;border-radius:10px;font-size:16px;font-weight:700}
 table.pe{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:15px;white-space:normal}table.pe th{font-size:12px;color:#8A8F98;font-weight:400;text-align:center;padding:4px 2px;border-bottom:1px solid #E3E6EA}table.pe th:first-child,table.pe td:first-child{text-align:left}table.pe td{text-align:center;padding:5px 2px}table.pe .r{color:#E53935;font-weight:700}table.pe .o{color:#F57C00;font-weight:700}table.pe .z{color:#B0B5BD}table.pe small{font-size:11px;margin-left:4px}table.pe .g{color:#06C755}hr.sub{border:0;border-top:2px dashed #AEB4BD;margin:14px 0 6px}.sec{margin:6px 0 2px;white-space:normal}
 .ov{position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9;padding:16px;box-sizing:border-box}.ov.on{display:flex}.box{background:#fff;border-radius:14px;padding:18px 16px;max-width:360px;width:100%;box-shadow:0 6px 24px rgba(0,0,0,.2)}.box h3{margin:0 0 8px;color:#C25E00;font-size:17px}.box p{margin:6px 0;font-size:15px;line-height:1.45;white-space:pre-wrap}.box .row{display:flex;gap:8px;margin-top:14px}.box .row button{flex:1}#dok{background:#06C755;color:#fff}#dno{background:#E53935;color:#fff}#dun{display:none;width:100%;margin-top:8px;background:#EEF0F3;color:#333}
 textarea{width:100%;box-sizing:border-box;height:110px;margin-top:10px;font-size:14px}
-.fld{background:#fff;border-radius:10px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}.fl{font-size:13px;color:#555;margin-bottom:6px;font-weight:600}.fld input,.fld select,.fld textarea.fa{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border:1px solid #D5D9DE;border-radius:8px;background:#fff;margin:0;height:auto}.fld textarea.fa{height:90px;font-family:inherit}.fld input[readonly]{background:#F1F3F5;color:#666}.fh{font-size:12px;color:#8A8F98;margin-top:4px}
+.fld{background:#fff;border-radius:10px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}.fl{font-size:13px;color:#555;margin-bottom:6px;font-weight:600}.fld input,.fld select,.fld textarea.fa{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border:1px solid #D5D9DE;border-radius:8px;background:#fff;margin:0;height:auto}.fld textarea.fa{height:90px;font-family:inherit}.seg{display:inline-flex;gap:4px}.seg b{font-weight:600;font-size:12px;padding:5px 9px;border-radius:14px;background:#EEF0F3;color:#555;cursor:pointer;user-select:none}.seg b.on{background:#06C755;color:#fff}.drow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #F0F1F3}.dn{font-size:14px;flex:1}.dn small{color:#8A8F98;font-size:11px}.dseg b{min-width:22px;text-align:center}.dseg b.vOK{background:#2E7D32}.dseg b.vNO{background:#C62828}.dseg b.vna{background:#8A8F98}.dseg b.vx{background:#B0B5BD}.dseg b.ro{opacity:.55;cursor:default}.fld input[readonly]{background:#F1F3F5;color:#666}.fh{font-size:12px;color:#8A8F98;margin-top:4px}
 </style></head><body>
 <div class="top"><span id="mode">Update</span><div class="sub" id="title">กำลังโหลด…</div></div>
 <div class="list" id="list"><div class="msg">กำลังโหลดรายการงาน…</div></div>
@@ -122,13 +122,33 @@ function apNow(){$('mode').textContent='Approve';$('title').textContent='Process
     if(r.note&&inC){n.textContent='🔔 Posting the result to this chat…';liff.sendMessages([{type:'text',text:'🔔 '+r.note.short+'\nรหัส '+r.note.code}]).then(function(){n.textContent='🔔 Posted. Closing…';setTimeout(function(){try{liff.closeWindow()}catch(e){}},1200)}).catch(function(){n.textContent='⚠️ Could not post the result to this chat.'})}
     else n.textContent='🔔 Notification sent.';
   }).catch(function(){fail('Could not load. Please close and open again.')})}
-var FT={sv:'Site survey',so:'Solar project',ev:'EV project',cp:'Complaint',ms:'Milestones'},OPT=null;
+var FT={sv:'Site survey',so:'Solar project',ev:'EV project',cp:'Complaint',ms:'Milestones',dc:'Documents'},OPT=null;
+var DC=null,DSEL={};
+function projPick(box,onPick){var w=document.createElement('div');w.className='fld';w.innerHTML='<div class="fl" style="display:flex;justify-content:space-between;align-items:center"><span>Project *</span><span class="seg" id="pf"><b data-f="">All</b><b data-f="so">☀️ Solar</b><b data-f="ev">⚡ EV</b></span></div>';
+  var sel=document.createElement('select');sel.id='f_project';w.appendChild(sel);box.appendChild(w);
+  function fill(f){var cur=sel.value;sel.innerHTML='';[''].concat((OPT.projects||[]).filter(function(p){return!f||(f==='ev')===!!p.ev}).map(function(p){return p.n})).forEach(function(v){var op=document.createElement('option');op.value=v;op.textContent=v||'— choose —';sel.appendChild(op)});
+    if([].some.call(sel.options,function(o){return o.value===cur}))sel.value=cur;else if(cur){sel.value='';sel.onchange()}
+    [].forEach.call(w.querySelectorAll('#pf b'),function(b){b.className=b.getAttribute('data-f')===f?'on':''})}
+  [].forEach.call(w.querySelectorAll('#pf b'),function(b){b.onclick=function(){fill(b.getAttribute('data-f'))}});
+  sel.onchange=function(){onPick(sel.value)};fill('');return sel}
+function dcBuild(){var box=$('list');box.innerHTML='';var body=document.createElement('div');
+  projPick(box,function(v){DC=null;DSEL={};fcheck();if(!v){body.innerHTML='';return}body.innerHTML='<div class="msg">Loading documents…</div>';
+    dupPost({api:'fdc',project:v}).then(function(r){if(!r||r.error){body.innerHTML='<div class="msg">'+String(r?r.error:'Could not load.').replace(/</g,'&lt;')+'</div>';return}DC=r;dcFields(body)}).catch(function(){body.innerHTML='<div class="msg">Could not load. Please try again.</div>'})});
+  box.appendChild(body);$('send').style.display='';$('send').textContent='💾 Save to file';$('send').onclick=fsubmit;fcheck()}
+function dcFields(body){var r=DC;body.innerHTML='';var info=document.createElement('div');info.className='fh';info.style.margin='2px 4px 6px';
+  info.textContent='Sheet: '+r.sheet+' · row '+r.row+(r.isNew?' (new row will be added)':'')+' — only changed items are saved.';body.appendChild(info);
+  var w=document.createElement('div');w.className='fld';w.innerHTML='<div class="fl">Owner (ขออนุญาต)</div>';msInput(w,'d_owner','text',r.owner,false,OPT.pes);body.appendChild(w);
+  var ph='',card=null;r.docs.forEach(function(d,i){if(d.phase!==ph||!card){ph=d.phase;card=document.createElement('div');card.className='fld';card.innerHTML='<div class="fl" style="color:#1F6B3B">'+(ph||'Documents').replace(/</g,'&lt;')+'</div>';body.appendChild(card)}
+    var row=document.createElement('div');row.className='drow';row.innerHTML='<div class="dn">'+d.k.replace(/</g,'&lt;')+(d.ro?' <small>(from Documents)</small>':'')+'</div><div class="seg dseg" id="ds'+i+'"><b data-v="OK">OK</b><b data-v="NO">NO</b><b data-v="N/A">N/A</b><b data-v="">–</b></div>';card.appendChild(row);
+    DSEL[d.k]=d.v||'';var seg=row.querySelector('.dseg');function paint(){[].forEach.call(seg.querySelectorAll('b'),function(b){var v=b.getAttribute('data-v');b.className=(v===DSEL[d.k]?'on v'+(v==='N/A'?'na':v||'x'):'')+(d.ro?' ro':'')})}
+    [].forEach.call(seg.querySelectorAll('b'),function(b){b.onclick=function(){if(d.ro)return;DSEL[d.k]=b.getAttribute('data-v');paint();fcheck()}});paint()});fcheck()}
+function dcChanges(){if(!DC)return{};var ch={};var o=$('d_owner');if(o&&(o.value||'').trim()!==(DC.owner||''))ch._owner=(o.value||'').trim();
+  DC.docs.forEach(function(d){if(!d.ro&&DSEL[d.k]!==(d.v||''))ch[d.k]=DSEL[d.k]});return ch}
+
 var MS=null;
-function msBuild(){var box=$('list');box.innerHTML='';var w=document.createElement('div');w.className='fld';w.innerHTML='<div class="fl">Project *</div>';var sel=document.createElement('select');sel.id='f_project';
-  [''].concat((OPT.projects||[]).map(function(p){return p.n})).forEach(function(v){var op=document.createElement('option');op.value=v;op.textContent=v||'— choose —';sel.appendChild(op)});
-  w.appendChild(sel);box.appendChild(w);var body=document.createElement('div');body.id='msbody';box.appendChild(body);
-  sel.onchange=function(){MS=null;fcheck();if(!sel.value){body.innerHTML='';return}body.innerHTML='<div class="msg">Loading milestones…</div>';
-    dupPost({api:'fms',project:sel.value}).then(function(r){if(!r||r.error){body.innerHTML='<div class="msg">'+String(r?r.error:'Could not load.').replace(/</g,'&lt;')+'</div>';return}MS=r;msFields(body)}).catch(function(){body.innerHTML='<div class="msg">Could not load. Please try again.</div>'})};
+function msBuild(){var box=$('list');box.innerHTML='';var body=document.createElement('div');body.id='msbody';
+  var sel=projPick(box,function(){MS=null;fcheck();if(!sel.value){body.innerHTML='';return}body.innerHTML='<div class="msg">Loading milestones…</div>';
+    dupPost({api:'fms',project:sel.value}).then(function(r){if(!r||r.error){body.innerHTML='<div class="msg">'+String(r?r.error:'Could not load.').replace(/</g,'&lt;')+'</div>';return}MS=r;msFields(body)}).catch(function(){body.innerHTML='<div class="msg">Could not load. Please try again.</div>'})});box.appendChild(body);
   $('send').style.display='';$('send').textContent='💾 Save to file';$('send').onclick=fsubmit;fcheck()}
 function msInput(w,id,type,val,ro,list){var el=document.createElement('input');el.type=type;el.id=id;el.value=val||'';if(ro){el.readOnly=true;el.disabled=type==='date'}
   if(list){var dl=document.createElement('datalist');dl.id='dl_'+id;list.forEach(function(v){var op=document.createElement('option');op.value=v;dl.appendChild(op)});w.appendChild(dl);el.setAttribute('list','dl_'+id)}
@@ -160,8 +180,8 @@ function buildForm(){var t=P.t,o=OPT,box=$('list');box.innerHTML='';
     if(d.hint){var h=document.createElement('div');h.className='fh';h.textContent=d.hint;w.appendChild(h)}box.appendChild(w)});
   if(t==='cp')$('f_project').addEventListener('change',function(){var p=(o.projects||[]).filter(function(x){return x.n===$('f_project').value})[0];if(p&&p.pe&&p.pe!=='-')$('f_owner').value=p.pe;fcheck()});
   $('send').style.display='';$('send').textContent='💾 Save to file';$('send').onclick=fsubmit;fcheck()}
-function fvals(){if(P.t==='ms')return{project:($('f_project')||{}).value||'',ch:msChanges()};var v={};fdefs(P.t,OPT).forEach(function(d){if(!d.ro)v[d.k]=($('f_'+d.k).value||'').trim()});return v}
-function fcheck(){if(P.t==='ms'){var c=fvals(),k=Object.keys(c.ch).length;$('send').disabled=!(c.project&&k);$('send').textContent=k?'💾 Save to file ('+k+')':'💾 Save to file';return!$('send').disabled}var v=fvals(),ok=fdefs(P.t,OPT).every(function(d){return!d.req||d.ro||v[d.k]});$('send').disabled=!ok;return ok}
+function fvals(){if(P.t==='ms'||P.t==='dc')return{project:($('f_project')||{}).value||'',ch:P.t==='ms'?msChanges():dcChanges()};var v={};fdefs(P.t,OPT).forEach(function(d){if(!d.ro)v[d.k]=($('f_'+d.k).value||'').trim()});return v}
+function fcheck(){if(P.t==='ms'||P.t==='dc'){var c=fvals(),k=Object.keys(c.ch).length;$('send').disabled=!(c.project&&k);$('send').textContent=k?'💾 Save to file ('+k+')':'💾 Save to file';return!$('send').disabled}var v=fvals(),ok=fdefs(P.t,OPT).every(function(d){return!d.req||d.ro||v[d.k]});$('send').disabled=!ok;return ok}
 function fsubmit(){if(!fcheck())return;var v=fvals();$('send').disabled=true;$('send').textContent='Saving…';
   var back=function(t){$('send').disabled=false;$('send').textContent='💾 Save to file';$('title').textContent=t};
   if(inClient()){dupPost({api:'fgo',t:P.t,f:v}).then(function(r){if(!r||r.error){back('⚠️ '+(r?r.error:'Failed. Please try again.'));return}
@@ -170,9 +190,9 @@ function fsubmit(){if(!fcheck())return;var v=fvals();$('send').disabled=true;$('
   dupPost({api:'fsave',t:P.t,f:v}).then(function(r){if(!r||r.error){back('⚠️ '+(r?r.error:'Failed. Please try again.'));return}
     $('title').textContent=r.ok?'✅ Saved':'❌ Not saved';$('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
     if(r.ok){$('send').style.display='none';$('cancel').textContent='Close'}else back(r.ok?'':'❌ Not saved')}).catch(function(){back('Could not send. Please try again.')})}
-function formStart(){$('mode').textContent='New entry';$('title').textContent=FT[P.t]||'';$('send').style.display='none';$('cancel').textContent='Cancel';$('list').innerHTML='<div class="msg">Loading…</div>';
+function formStart(){try{if(liffOk&&!liff.isInClient()&&!liff.isLoggedIn()){$('list').innerHTML='<div class="msg">Signing in with LINE…</div>';liff.login({redirectUri:location.href});return}}catch(e){}$('mode').textContent='New entry';$('title').textContent=FT[P.t]||'';$('send').style.display='none';$('cancel').textContent='Cancel';$('list').innerHTML='<div class="msg">Loading…</div>';
   if(!FT[P.t]){fail('Unknown form type.');return}
-  dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];if(P.t==='ms')msBuild();else buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
+  dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];if(P.t==='ms')msBuild();else if(P.t==='dc')dcBuild();else buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
 function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':P.m==='ap'?'ap':P.m==='form'?'form':'';if(M==='form'){formStart();return}if(M==='ap'){apNow();return}if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
