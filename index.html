@@ -10,7 +10,7 @@ label{display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius
 input[type=checkbox]{width:22px;height:22px;flex:0 0 22px;margin:0;accent-color:#06C755}
 .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;padding:10px 12px;display:flex;gap:8px;box-shadow:0 -1px 4px rgba(0,0,0,.08)}
 button{padding:14px;border:0;border-radius:10px;font-size:16px;font-weight:700}
-#send{flex:2;background:#06C755;color:#fff}#send:disabled{background:#B7C0C8}#send.danger{background:#C62828}#send.danger:disabled{background:#B7C0C8}
+#send{flex:2;background:#06C755;color:#fff}#send:disabled{background:#B7C0C8}#send.danger{background:#C62828}.mbtn{display:block;width:100%;border:0;border-radius:10px;color:#fff;text-align:left;padding:14px 16px;margin:10px 0;cursor:pointer;font:inherit}.mbtn b{display:block;font-size:16px}.mbtn small{display:block;font-size:12px;opacity:.85;margin-top:3px}#send.danger:disabled{background:#B7C0C8}
 #cancel{flex:1;background:#EEF0F3;color:#333}
 .msg{padding:24px 16px;text-align:center;color:#555;font-size:15px;line-height:1.5}
 .read{white-space:pre-wrap;background:#fff;border-radius:10px;padding:14px;font-size:15px;line-height:1.55;box-shadow:0 1px 2px rgba(0,0,0,.06)}
@@ -124,6 +124,9 @@ function apNow(){$('mode').textContent='Approve';$('title').textContent='Process
   }).catch(function(){fail('Could not load. Please close and open again.')})}
 var FT={sv:'Site survey',so:'Solar project',ev:'EV project',cp:'Complaint',ms:'Milestones',dc:'Documents',del:'Delete site',rn:'Rename site'},OPT=null;
 var RN=null;
+function moreMenu(){$('mode').textContent='More';$('title').textContent='⚙️ More options';var box=$('list');box.innerHTML='';
+  [['rn','✏️ Rename site','Change a site / project name in every sheet','#455A64'],['del','🗑️ Delete site','Remove a site / project from every sheet','#546E7A']].forEach(function(o){var b=document.createElement('button');b.className='mbtn';b.style.background=o[3];b.innerHTML='<b>'+o[1]+'</b><small>'+o[2]+'</small>';
+    b.onclick=function(){P.t=o[0];OPT=null;DEL=null;RN=null;$('send').classList.remove('danger');formStart()};box.appendChild(b)})}
 function rnBuild(){var box=$('list');box.innerHTML='';var body=document.createElement('div');
   projPick(box,function(v){RN=null;fcheck();if(!v){body.innerHTML='';return}body.innerHTML='<div class="msg">Checking the file…</div>';
     dupPost({api:'frn',project:v}).then(function(r){if(!r||r.error){body.innerHTML='<div class="msg">'+hesc(r?r.error:'Could not load.')+'</div>';return}RN=r;rnFields(body)}).catch(function(){body.innerHTML='<div class="msg">Could not load. Please try again.</div>'})});
@@ -232,6 +235,7 @@ function fsubmit(){if(!fcheck())return;var v=fvals();$('send').disabled=true;$('
     $('title').textContent=r.ok?(P.t==='del'?'✅ Deleted':P.t==='rn'?'✅ Renamed':'✅ Saved'):'❌ Not saved';$('list').innerHTML='';var d=document.createElement('div');d.className='read';d.textContent=r.text||'';$('list').appendChild(d);
     if(r.ok){$('send').style.display='none';$('cancel').textContent='Close'}else back(r.ok?'':'❌ Not saved')}).catch(function(){back('Could not send. Please try again.')})}
 function formStart(){try{if(liffOk&&!liff.isInClient()&&!liff.isLoggedIn()){$('list').innerHTML='<div class="msg">Signing in with LINE…</div>';liff.login({redirectUri:location.href});return}}catch(e){}$('mode').textContent=P.t==='del'?'Delete':P.t==='rn'?'Rename':'New entry';$('title').textContent=FT[P.t]||'';$('send').style.display='none';$('cancel').textContent='Cancel';$('list').innerHTML='<div class="msg">Loading…</div>';
+  if(P.t==='more'){moreMenu();return}
   if(!FT[P.t]){fail('Unknown form type.');return}
   dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];if(P.t==='ms')msBuild();else if(P.t==='dc')dcBuild();else if(P.t==='del')delBuild();else if(P.t==='rn')rnBuild();else buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
 function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':P.m==='ap'?'ap':P.m==='form'?'form':'';if(M==='form'){formStart();return}if(M==='ap'){apNow();return}if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
