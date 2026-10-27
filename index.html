@@ -137,9 +137,11 @@ function delFields(body){var r=DEL;body.innerHTML='';var c=document.createElemen
   c.innerHTML=h;body.appendChild(c);
   var w=document.createElement('div');w.className='fld';w.innerHTML='<label style="display:flex;gap:10px;align-items:center;font-size:14px;cursor:pointer"><input type="checkbox" id="d_ok" style="width:20px;height:20px">Yes, delete “'+hesc(r.project)+'”</label>';body.appendChild(w);$('d_ok').onchange=fcheck;fcheck()}
 var DC=null,DSEL={};
-function projPick(box,onPick){var w=document.createElement('div');w.className='fld';w.innerHTML='<div class="fl" style="display:flex;justify-content:space-between;align-items:center"><span>Project *</span><span class="seg" id="pf"><b data-f="">All</b><b data-f="so">☀️ Solar</b><b data-f="ev">⚡ EV</b></span></div>';
+function pfOk(p,f){return!f||(f==='sv'?!!p.sv:!p.sv&&(f==='ev')===!!p.ev)}
+function pfSeg(){return'<span class="seg" id="pf"><b data-f="">All</b><b data-f="so">☀️ Solar</b><b data-f="ev">⚡ EV</b>'+((OPT.projects||[]).some(function(p){return p.sv})?'<b data-f="sv">🔭 Survey</b>':'')+'</span>'}
+function projPick(box,onPick){var w=document.createElement('div');w.className='fld';w.innerHTML='<div class="fl" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>Project *</span>'+pfSeg()+'</div>';
   var sel=document.createElement('select');sel.id='f_project';w.appendChild(sel);box.appendChild(w);
-  function fill(f){var cur=sel.value;sel.innerHTML='';[''].concat((OPT.projects||[]).filter(function(p){return!f||(f==='ev')===!!p.ev}).map(function(p){return p.n})).forEach(function(v){var op=document.createElement('option');op.value=v;op.textContent=v||'— choose —';sel.appendChild(op)});
+  function fill(f){var cur=sel.value;sel.innerHTML='';[{n:''}].concat((OPT.projects||[]).filter(function(p){return pfOk(p,f)})).forEach(function(p){var op=document.createElement('option');op.value=p.n;op.textContent=p.n?p.n+(p.sv?' · survey':''):'— choose —';sel.appendChild(op)});
     if([].some.call(sel.options,function(o){return o.value===cur}))sel.value=cur;else if(cur){sel.value='';sel.onchange()}
     [].forEach.call(w.querySelectorAll('#pf b'),function(b){b.className=b.getAttribute('data-f')===f?'on':''})}
   [].forEach.call(w.querySelectorAll('#pf b'),function(b){b.onclick=function(){fill(b.getAttribute('data-f'))}});
@@ -200,8 +202,8 @@ function buildForm(){var t=P.t,o=OPT,box=$('list');box.innerHTML='';
       if(d.list){var id='dl_'+d.k,dl=document.createElement('datalist');dl.id=id;d.list.forEach(function(v){var op=document.createElement('option');op.value=v;dl.appendChild(op)});w.appendChild(dl);el.setAttribute('list',id)}}
     el.id='f_'+d.k;if(d.def)el.value=d.def;el.oninput=el.onchange=fcheck;w.appendChild(el);
     if(d.hint){var h=document.createElement('div');h.className='fh';h.textContent=d.hint;w.appendChild(h)}box.appendChild(w)});
-  if(t==='cp'){var ps=$('f_project'),lb0=ps.parentNode.querySelector('.fl');lb0.style.cssText='display:flex;justify-content:space-between;align-items:center';lb0.innerHTML='<span>Project *</span><span class="seg" id="pf"><b data-f="">All</b><b data-f="so">☀️ Solar</b><b data-f="ev">⚡ EV</b></span>';
-    var cfill=function(f){var cur=ps.value;ps.innerHTML='';[{n:''}].concat((o.projects||[]).filter(function(p){return!f||(f==='ev')===!!p.ev})).forEach(function(p){var op=document.createElement('option');op.value=p.n;op.textContent=p.n?p.n+(p.sv?' · survey':''):'— choose —';ps.appendChild(op)});
+  if(t==='cp'){var ps=$('f_project'),lb0=ps.parentNode.querySelector('.fl');lb0.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap';lb0.innerHTML='<span>Project *</span>'+pfSeg();
+    var cfill=function(f){var cur=ps.value;ps.innerHTML='';[{n:''}].concat((o.projects||[]).filter(function(p){return pfOk(p,f)})).forEach(function(p){var op=document.createElement('option');op.value=p.n;op.textContent=p.n?p.n+(p.sv?' · survey':''):'— choose —';ps.appendChild(op)});
       ps.value=[].some.call(ps.options,function(x){return x.value===cur})?cur:'';[].forEach.call(lb0.querySelectorAll('#pf b'),function(b){b.className=b.getAttribute('data-f')===f?'on':''});fcheck()};
     [].forEach.call(lb0.querySelectorAll('#pf b'),function(b){b.onclick=function(){cfill(b.getAttribute('data-f'))}});cfill('')}
   if(t==='cp')$('f_project').addEventListener('change',function(){var p=(o.projects||[]).filter(function(x){return x.n===$('f_project').value})[0];if(p&&p.pe&&p.pe!=='-')$('f_owner').value=p.pe;fcheck()});
