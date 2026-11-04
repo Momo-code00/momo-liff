@@ -13,6 +13,7 @@ button{padding:14px;border:0;border-radius:10px;font-size:16px;font-weight:700}
 #send{flex:2;background:#06C755;color:#fff}#send:disabled{background:#B7C0C8}#send.danger{background:#C62828}.mbtn{display:block;width:100%;border:0;border-radius:10px;color:#fff;text-align:left;padding:14px 16px;margin:10px 0;cursor:pointer;font:inherit}.mbtn b{display:block;font-size:16px}.mbtn small{display:block;font-size:12px;opacity:.85;margin-top:3px}#send.danger:disabled{background:#B7C0C8}
 #cancel{flex:1;background:#EEF0F3;color:#333}
 .msg{padding:24px 16px;text-align:center;color:#555;font-size:15px;line-height:1.5}
+.mapbtn{display:block;margin-top:8px;padding:12px 14px;background:#fff;border-radius:10px;color:#1565C0;font-size:15px;font-weight:600;text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .read{white-space:pre-wrap;background:#fff;border-radius:10px;padding:14px;font-size:15px;line-height:1.55;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 table.pe{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:15px;white-space:normal}table.pe th{font-size:12px;color:#8A8F98;font-weight:400;text-align:center;padding:4px 2px;border-bottom:1px solid #E3E6EA}table.pe th:first-child,table.pe td:first-child{text-align:left}table.pe td{text-align:center;padding:5px 2px}table.pe .r{color:#E53935;font-weight:700}table.pe .o{color:#F57C00;font-weight:700}table.pe .z{color:#B0B5BD}table.pe small{font-size:11px;margin-left:4px}table.pe .g{color:#06C755}hr.sub{border:0;border-top:2px dashed #AEB4BD;margin:14px 0 6px}.sec{margin:6px 0 2px;white-space:normal}
 .ov{position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9;padding:16px;box-sizing:border-box}.ov.on{display:flex}.box{background:#fff;border-radius:14px;padding:18px 16px;max-width:360px;width:100%;box-shadow:0 6px 24px rgba(0,0,0,.2)}.box h3{margin:0 0 8px;color:#C25E00;font-size:17px}.box p{margin:6px 0;font-size:15px;line-height:1.45;white-space:pre-wrap}.box .row{display:flex;gap:8px;margin-top:14px}.box .row button{flex:1}#dok{background:#06C755;color:#fff}#dno{background:#E53935;color:#fff}#dun{display:none;width:100%;margin-top:8px;background:#EEF0F3;color:#333}
@@ -57,6 +58,7 @@ function render(r){
   if(M==='read'){
     $('mode').textContent='Details';
     var d=document.createElement('div');d.className='read';readBody(d,r.body||'-');$('list').appendChild(d);
+    (r.maps||[]).forEach(function(m){if(!/^https?:\/\//.test(m.u||''))return;var a=document.createElement('a');a.className='mapbtn';a.href=m.u;a.target='_blank';a.rel='noopener';a.textContent='📍 '+m.n;a.onclick=function(e){try{if(window.liff&&liff.isInClient&&liff.isInClient()){e.preventDefault();liff.openWindow({url:m.u,external:true})}}catch(x){}};$('list').appendChild(a)});  // v113: แผนที่นำทางในหน้า Read more
     $('cancel').textContent='Close';
     if(r.own&&r.items.length){$('send').disabled=false;$('send').textContent='✅ Update ('+r.items.length+')';$('send').onclick=function(){M='';$('send').onclick=send;render(DATA)}}
     else $('send').style.display='none';
