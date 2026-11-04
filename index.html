@@ -330,6 +330,27 @@ function formStart(){try{if(liffOk&&!liff.isInClient()&&!liff.isLoggedIn()){$('l
   if(P.t==='more'){moreMenu();return}
   if(!FT[P.t]){fail('Unknown form type.');return}
   dupPost({api:'fopt',t:P.t}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}OPT=r;$('title').textContent=r.title||FT[P.t];if(P.t==='ms')msBuild();else if(P.t==='dc')dcBuild();else if(P.t==='del')delBuild();else if(P.t==='rn')rnBuild();else if(P.t==='dr')drForm();else buildForm()}).catch(function(){fail('Could not load. Please close and open again.')})}
-function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':P.m==='ap'?'ap':P.m==='form'?'form':'';if(M==='form'){formStart();return}if(M==='ap'){apNow();return}if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
+// v114: ป๊อปอัปอนุมัติหลายรายการของงานเดียวกัน (เลือกอนุมัติ / ปฏิเสธทีละรายการ)
+var APB=[];
+function apbStart(){$('mode').textContent='Approve';$('title').textContent='กำลังโหลด…';$('cancel').textContent='Close';$('cancel').onclick=closeWin;$('list').innerHTML='<div class="msg">กำลังโหลด…</div>';
+  dupPost({api:'apb',b:P.b}).then(function(r){if(!r||r.error){fail(r?r.error:'Could not load. Please close and open again.');return}
+    $('title').textContent=r.project+' · '+r.items.length+' รายการ';var box=$('list');box.innerHTML='';APB=r.items.map(function(it){return{id:it.id,a:it.open?'ap':''}});
+    var op=r.items.filter(function(it){return it.open}).length;
+    if(op>1){var t=document.createElement('div');t.className='fld';t.innerHTML='<div class="fl">เลือกทั้งหมด</div><span class="seg" id="apb_all"><b data-v="ap">✅ อนุมัติทั้งหมด</b><b data-v="rj">❌ ปฏิเสธทั้งหมด</b></span>';box.appendChild(t);
+      [].forEach.call(t.querySelectorAll('b'),function(b){b.onclick=function(){var v=b.getAttribute('data-v');APB.forEach(function(x,i){if(r.items[i].open)x.a=v});apbPaint()}})}
+    r.items.forEach(function(it,i){var c=document.createElement('div');c.className='fld';
+      c.innerHTML='<div style="font-size:15px;font-weight:600;line-height:1.4">'+(i+1)+'. '+hesc(it.label.indexOf(r.project+':')===0?it.label.slice(r.project.length+1).trim():it.label)+'</div>'+(it.det?'<div class="fh">'+hesc(it.det)+'</div>':'')+
+        (it.open?'<div style="margin-top:8px"><span class="seg apseg" data-i="'+i+'"><b data-v="ap">✅ Approve</b><b data-v="rj">❌ Reject</b><b data-v="">ข้าม</b></span></div>':'<div class="fh" style="font-weight:600">'+(it.st==='rj'?'❌ ไม่อนุมัติไปแล้ว':it.st==='ap'?'✅ อนุมัติไปแล้ว':'ดำเนินการแล้ว')+'</div>');
+      box.appendChild(c);var sg=c.querySelector('.apseg');if(sg)[].forEach.call(sg.querySelectorAll('b'),function(b){b.onclick=function(){APB[i].a=b.getAttribute('data-v');apbPaint()}})});
+    if(r.name){var n=document.createElement('div');n.className='fh';n.style.padding='4px 4px 0';n.textContent='แจ้งโดย: '+r.name+(r.text?' · "'+r.text+'"':'');box.appendChild(n)}
+    $('send').style.display='';$('send').onclick=apbGo;apbPaint()}).catch(function(){fail('Could not load. Please close and open again.')})}
+function apbPaint(){[].forEach.call(document.querySelectorAll('.apseg'),function(sg){var a=APB[+sg.getAttribute('data-i')].a;[].forEach.call(sg.querySelectorAll('b'),function(b){var on=b.getAttribute('data-v')===a;b.className=on?'on':'';b.style.background=on&&a==='rj'?'#C62828':on&&a===''?'#8A8F98':''})});
+  var na=APB.filter(function(x){return x.a==='ap'}).length,nr=APB.filter(function(x){return x.a==='rj'}).length;$('send').disabled=!(na+nr);$('send').className=na?'':'danger';$('send').textContent='📤 ยืนยัน (✅ '+na+' · ❌ '+nr+')'}
+function apbGo(){var dec=APB.filter(function(x){return x.a});if(!dec.length)return;$('send').disabled=true;$('send').textContent='กำลังส่ง…';
+  dupPost({api:'apbgo',b:P.b,dec:dec}).then(function(r){if(!r||r.error){$('title').textContent='⚠️ '+(r?r.error:'Failed. Please try again.');apbPaint();return}
+    if(!inClient()){fail('Please open this from the LINE app.');return}
+    $('send').style.display='none';$('list').innerHTML='<div class="msg">Posting to this chat… Momo will reply right away.</div>';
+    liff.sendMessages([{type:'text',text:'📋 อนุมัติ '+r.na+' · ไม่อนุมัติ '+r.nr+': '+r.label+'\nรหัส '+r.code}]).then(function(){try{liff.closeWindow()}catch(e){}}).catch(function(){fail('⚠️ Could not post to this chat. Please close and tap the button again.')})}).catch(function(){$('title').textContent='⚠️ Failed. Please try again.';apbPaint()})}
+function start(){qs(location.search);if(P['liff.state'])qs(P['liff.state'].replace(/^[^?]*/,''));M=P.m==='read'?'read':P.m==='dup'?'dup':P.m==='ap'?'ap':P.m==='form'?'form':P.m==='apb'?'apb':'';if(M==='apb'){apbStart();return}if(M==='form'){formStart();return}if(M==='ap'){apNow();return}if(M==='dup'){dupPost({api:'dup'}).then(renderDup).catch(function(){fail('Could not load. Please close and open again.')});return}api('api=items&k='+(P.k||'')+'&i='+(P.i||'')).then(render).catch(function(){fail('โหลดไม่สำเร็จ ลองปิดแล้วเปิดใหม่')})}
 liff.init({liffId:LIFF_ID}).then(function(){liffOk=true;start()}).catch(function(){start()});
 </script></body></html>
