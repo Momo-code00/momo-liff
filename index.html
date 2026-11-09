@@ -93,6 +93,8 @@ function renderDup(r){if(!r||r.error){fail(r?r.error:'Could not load. Please clo
   $('ov').className='ov on'}
 function dupTok(){var at='';try{if(liffOk)at=liff.getAccessToken()||''}catch(e){}return at}
 function dupPost(o){o.at=dupTok();o.d=P.d||'';o.n=P.n||'';o.ts=P.ts||'';o.sg=P.sg||'';try{var c=liffOk&&liff.getContext();if(c){o.ctx=c.type||'';o.cg=c.groupId||c.roomId||''}}catch(e){}return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(function(x){return x.json()})}
+function cardMsg(t){t=String(t||'');var L=t.split('\n').filter(function(s){return s.trim()}),u=(t.match(/https?:\/\/\S+/)||[])[0];if(!u||!L.length)return {type:'text',text:t};var b=[{type:'text',text:L[0],weight:'bold',size:'md',wrap:true}];L.slice(1).forEach(function(s){if(s.indexOf(u)<0)b.push({type:'text',text:s,size:'sm',color:'#555555',wrap:true,margin:'sm'})});return {type:'flex',altText:L[0].slice(0,300),contents:{type:'bubble',size:'kilo',body:{type:'box',layout:'vertical',contents:b},footer:{type:'box',layout:'vertical',contents:[{type:'button',style:'primary',height:'sm',color:'#06C755',action:{type:'uri',label:/Slides|PowerPoint|pptx/i.test(L[0])?'📊 Open Slides':'📄 Open PDF',uri:u}}]}}}}  // v124: ผลอนุมัติ → การ์ด + ปุ่มเปิดไฟล์
+function postCard(t){if(!inClient())return;liff.sendMessages([cardMsg(t)]).catch(function(){liff.sendMessages([{type:'text',text:t}]).catch(function(){})})}
 function inClient(){try{return liffOk&&liff.isInClient()}catch(e){return false}}
 function goSend(r,onFail){var w={ap:'✅ Approve: ',ap2:'✅ Approve again: ',rj:'❌ Reject: ',dn:'❌ Reject: ',undo:'↩️ Cancel approval: '}[r.act]||'✅ Approve: ';
   $('title').textContent=r.act==='rj'||r.act==='dn'?'❌ Not approved':r.act==='undo'?'↩️ Cancelling approval…':'✅ Approved';$('send').style.display='none';$('cancel').textContent='Close';
@@ -214,9 +216,9 @@ function drSubmit(){if(!fcheck())return;var f=drVals();$('send').disabled=true;$
     var b1=document.createElement('button');b1.className='mbtn';b1.style.background='#0D47A1';b1.innerHTML='<b>📄 Open PDF</b><small>Open / download the report</small>';b1.onclick=function(){drOpen(r.url)};box.appendChild(b1);
     var b2=document.createElement('button');b2.className='mbtn';b2.style.background='#546E7A';b2.innerHTML='<b>📊 Get slides (.pptx)</b><small>For presentations</small>';b2.onclick=function(){b2.disabled=true;b2.querySelector('small').textContent='Creating…';
       dupPost({api:'drppt',project:DR.project,date:f.date}).then(function(x){b2.disabled=false;if(!x||x.error){b2.querySelector('small').textContent=x?x.error:'Failed';return}b2.querySelector('small').textContent='Ready — tap to open';b2.onclick=function(){drOpen(x.url)};
-        if(inClient())liff.sendMessages([{type:'text',text:x.text}]).catch(function(){});drOpen(x.url)})};box.appendChild(b2);
+        postCard(x.text);drOpen(x.url)})};box.appendChild(b2);
     $('send').style.display='none';if($('drsave'))$('drsave').style.display='none';if($('rjbtn'))$('rjbtn').style.display='none';$('cancel').textContent='Close';
-    if(inClient())liff.sendMessages([{type:'text',text:r.text}]).catch(function(){})}).catch(function(){$('send').disabled=false;fcheck();$('title').textContent='⚠️ Could not send. Please try again.'})}
+    postCard(r.text)}).catch(function(){$('send').disabled=false;fcheck();$('title').textContent='⚠️ Could not send. Please try again.'})}
 // v116: Weekly Report (ดึงจาก Daily Report · เทียบสัปดาห์ที่แล้ว · แก้ไขได้ · เลือกรูป)
 var WK=null;
 function wkPc(v){v=Math.round((+v||0)*10)/10;return v+'%'}
@@ -269,8 +271,8 @@ function wkSubmit(){if(!fcheck())return;var f=wkVals();$('send').disabled=true;$
     var b1=document.createElement('button');b1.className='mbtn';b1.style.background='#00695C';b1.innerHTML='<b>📄 Open PDF</b><small>Open / download the report</small>';b1.onclick=function(){drOpen(r.url)};box.appendChild(b1);
     var b2=document.createElement('button');b2.className='mbtn';b2.style.background='#546E7A';b2.innerHTML='<b>📊 Get slides (.pptx)</b><small>For presentations</small>';b2.onclick=function(){b2.disabled=true;b2.querySelector('small').textContent='Creating…';
       dupPost({api:'wkppt',project:WK.project,date:f.date}).then(function(x){b2.disabled=false;if(!x||x.error){b2.querySelector('small').textContent=x?x.error:'Failed';return}b2.querySelector('small').textContent='Ready — tap to open';b2.onclick=function(){drOpen(x.url)};
-        if(inClient())liff.sendMessages([{type:'text',text:x.text}]).catch(function(){});drOpen(x.url)})};box.appendChild(b2);
-    if(inClient())liff.sendMessages([{type:'text',text:r.text}]).catch(function(){})}).catch(function(){$('send').disabled=false;fcheck();$('title').textContent='⚠️ Could not send. Please try again.'})}
+        postCard(x.text);drOpen(x.url)})};box.appendChild(b2);
+    postCard(r.text)}).catch(function(){$('send').disabled=false;fcheck();$('title').textContent='⚠️ Could not send. Please try again.'})}
 // v117: ผู้อนุมัติ ✅ Approve / ❌ Reject ในป๊อปอัปเดียว
 function rjSync(X,api){var on=!!(X&&X.isAp&&X.pend),b=$('rjbtn');if(!b){if(!on)return;b=document.createElement('button');b.id='rjbtn';b.style.cssText='flex:1;background:#FDECEA;color:#C62828';$('send').parentNode.insertBefore(b,$('send'))}
   b.style.display=on?'':'none';if($('drsave'))$('drsave').style.display=on?'none':'';if(!on)return;if(!b.getAttribute('data-c'))b.textContent='❌ Reject';
