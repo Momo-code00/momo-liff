@@ -289,7 +289,7 @@ function mpcCard(body,list,m,title){m=m||{};var v=m.v||{},off=m.off||[];  // v12
 function mpcVals(){if(!$('mpc_on'))return null;var v={},off=[];[].forEach.call(document.querySelectorAll('.mpc_d'),function(cb){var d=cb.getAttribute('data-d'),i=$('mpc_v_'+d),x=i?i.value.trim():'';if(!cb.checked)off.push(d);if(x!=='')v[d]=Math.max(0,+x||0)});return{on:$('mpc_on').checked,v:v,off:off}}
 function drOpen(u){try{if(liffOk&&liff.isInClient()){liff.openWindow({url:u,external:true});return}}catch(e){}window.open(u,'_blank')}
 function moreMenu(){$('mode').textContent='More';$('title').textContent='⚙️ More options';var box=$('list');box.innerHTML='';
-  [['rn','✏️ Rename site','Change a site / project name in every sheet','#455A64'],['del','🗑️ Delete site','Remove a site / project from every sheet','#546E7A']].forEach(function(o){var b=document.createElement('button');b.className='mbtn';b.style.background=o[3];b.innerHTML='<b>'+o[1]+'</b><small>'+o[2]+'</small>';
+  [['sv','🔭 Site survey','Add a site survey plan','#00838F'],['cp','⚠️ Complaint','Log a customer complaint','#C62828'],['rn','✏️ Rename site','Change a site / project name in every sheet','#455A64'],['del','🗑️ Delete site','Remove a site / project from every sheet','#546E7A']].forEach(function(o){var b=document.createElement('button');b.className='mbtn';b.style.background=o[3];b.innerHTML='<b>'+o[1]+'</b><small>'+o[2]+'</small>';
     b.onclick=function(){P.t=o[0];OPT=null;DEL=null;RN=null;$('send').classList.remove('danger');formStart()};box.appendChild(b)})}
 function rnBuild(){var box=$('list');box.innerHTML='';var body=document.createElement('div');
   projPick(box,function(v){RN=null;fcheck();if(!v){body.innerHTML='';return}body.innerHTML='<div class="msg">Checking the file…</div>';
