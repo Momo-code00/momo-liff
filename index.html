@@ -489,12 +489,44 @@ function hoFields(body){var f=HO.f,s=HO.saved;f.slots=f.slots||[];body.innerHTML
     d.appendChild(w);
     [].forEach.call(w.querySelectorAll('textarea[data-hlt]'),function(e){e.oninput=function(){var k=e.getAttribute('data-hlt'),i=+e.getAttribute('data-i');f[k]=e.value.trim()===String(A[i]||'').trim()?'':e.value.trim()}});
     [].forEach.call(w.querySelectorAll('a[data-hlr]'),function(a){a.onclick=function(ev){ev.preventDefault();var k=a.getAttribute('data-hlr'),e=w.querySelector('textarea[data-hlt="'+k+'"]');f[k]='';e.value=A[+e.getAttribute('data-i')]||''}})})();
+  hoAddr(body);  /* v150 */
   HOT.forEach(function(t){var c=hoSec(body,t[1],'<div id="hot_'+t[0]+'"></div><button type="button" class="mini">+ Add row</button>');c.querySelector('button.mini').onclick=function(){f[t[0]]=f[t[0]]||[];f[t[0]].push(t[2].map(function(){return''}));hoTbl(t)};hoTbl(t)});
   HOL.forEach(function(l){var v=f[l[0]];hoSec(body,'📝 '+l[1],'<div class="fh">1 line = 1 item</div><textarea class="fa" data-hol="'+l[0]+'" style="height:150px">'+hesc((Array.isArray(v)?v:String(v||'').split('\n')).join('\n'))+'</textarea>'+(l[0]==='topics'?'<div id="ho_tchk"></div>':''))});hoTopics(body);
   hoSec(body,'📷 Photos <span class="sm2" id="ho_phn"></span>','<div class="fh">Tap the box to add a photo · the number = section in the book</div><div id="ho_ph"></div><div class="drow"><select id="ho_newk" style="flex:1">'+HOK.map(function(k){return'<option>'+hesc(k)+'</option>'}).join('')+'</select><button type="button" class="mini" id="ho_addph" style="margin:0">+ Add photo</button></div>',1);
   $('ho_addph').onclick=function(){f.slots.push({k:$('ho_newk').value,cap:'',id:'',add:1});hoPh()};hoPh();
   [].forEach.call(body.querySelectorAll('input[data-ho]'),function(e){e.oninput=function(){var k=e.getAttribute('data-ho'),t=e.getAttribute('data-t'),v=e.value;f[k]=t==='p'?(v===''?'':(+v)/100):t==='n'?(v===''?'':+v):v}});
   [].forEach.call(body.querySelectorAll('textarea[data-hol]'),function(e){e.oninput=function(){f[e.getAttribute('data-hol')]=e.value.split('\n');if(e.getAttribute('data-hol')==='topics')hoTopics(document)}})}
+/* v150: ที่อยู่ (ไทย) — เลือก หรือพิมพ์ค้นหา จังหวัด · อำเภอ/เขต · ตำบล/แขวง · รหัสไปรษณีย์ (ข้อมูลทั้งประเทศ) · บ้านเลขที่/หมู่/หมู่บ้าน/ซอย/ถนน พิมพ์เอง */
+var TADR=null;
+function tadLoad(){if(TADR)return Promise.resolve(TADR);return fetch('https://cdn.jsdelivr.net/npm/thai-address-database@0.0.33/database/backup/geodb.json').then(function(r){return r.json()}).then(function(g){var lk=g.lookup.split('|'),wd=g.words.split('|'),th=function(x,y){return x.n.localeCompare(y.n,'th')};function t(x){return(typeof x==='number'?lk[x]:x).replace(/[A-Z]/ig,function(m){var c=m.charCodeAt(0);return wd[c<97?c-65:26+c-97]})}
+  TADR=g.data.map(function(p){var P={n:t(p[0]),a:p[2].map(function(a){return{n:t(a[0]),t:a[2].map(function(b){return{n:t(b[0]),z:String(b[2])}}).sort(th)}}).sort(th)};P.bk=/กรุงเทพ/.test(P.n);return P}).sort(th);return TADR})}
+function tadNm(s){return String(s||'').replace(/\s+/g,'').replace(/กรุงเทพฯ|กทม\.?/g,'กรุงเทพมหานคร')}
+function tadLong(arr,A){return arr.filter(function(x){return A.indexOf(x.n)>=0}).sort(function(x,y){return y.n.length-x.n.length})[0]}
+function tadTxt(P,a,b,z){return[P&&b?(P.bk?'แขวง':'ตำบล')+b.n:'',P&&a?(P.bk?'เขต':'อำเภอ')+a.n:'',P?(P.bk?P.n:'จังหวัด'+P.n):'',z||''].filter(String).join(' ')}
+function hoAddr(body){var inp=body.querySelector('input[data-ho="place"]');if(!inp)return;var w=document.createElement('div');w.style.cssText='margin:6px 0 4px;padding:8px 10px;border:1px dashed #C9D3E0;border-radius:10px;background:#F8FAFC';w.innerHTML='<div class="fh" style="margin:0">📍 กำลังโหลดรายชื่อจังหวัด / อำเภอ / ตำบล…</div>';inp.parentNode.insertBefore(w,inp.nextSibling);
+  tadLoad().then(function(D){var S={p:null,a:null,b:null,z:''},cut=/\s*(ตำบล|ต\.|แขวง|อำเภอ|อ\.|เขต|จังหวัด|จ\.|กรุงเทพ)/;
+    function base0(){var v=inp.value,i=v.search(cut);return(i>=0?v.slice(0,i):v).replace(/\s*\d{5}\s*$/,'').trim()}
+    var A=tadNm(inp.value);S.p=tadLong(D,A)||null;if(S.p){S.a=tadLong(S.p.a,A)||(/(อำเภอ|อ\.)เมือง/.test(A)?S.p.a.filter(function(x){return x.n==='เมือง'+S.p.n})[0]:null)||null;if(S.a){var k=A.indexOf(S.a.n);S.b=tadLong(S.a.t,k>0?A.slice(0,k):A)||null}}S.z=S.b?S.b.z:'';var m5=inp.value.match(/\d{5}/);if(m5)S.z=m5[0];
+    w.innerHTML='<div class="fl" style="margin:0 0 4px">📍 เลือกที่อยู่ (ทุกจังหวัดทั่วประเทศ)</div>'+
+      '<div class="fh" style="margin:4px 0 3px">🔍 ค้นหาเร็ว — พิมพ์ชื่อ ตำบล / แขวง / อำเภอ / เขต / จังหวัด หรือรหัสไปรษณีย์</div><input type="search" class="tadq" autocomplete="off" placeholder="เช่น วังตะเคียน, ลาดพร้าว, 24000"><div class="tadr"></div>'+
+      '<div class="fh" style="margin:8px 0 3px">บ้านเลขที่ / หมู่ที่ / หมู่บ้าน / อาคาร / ซอย / ถนน (พิมพ์เอง)</div><input type="text" class="tadb" placeholder="เช่น 36/2 หมู่ที่ 3 หมู่บ้าน… ซอย… ถนน…">'+
+      [['p','จังหวัด'],['a','อำเภอ / เขต'],['b','ตำบล / แขวง'],['z','รหัสไปรษณีย์']].map(function(x){return'<div><div class="fh" style="margin:8px 0 3px">'+x[1]+'</div><select class="tads" data-k="'+x[0]+'" style="width:100%"></select></div>'}).join('')+
+      '<div class="fh" style="margin:8px 0 0">เลือกแล้วระบบเขียนลงช่อง "ที่อยู่ (ไทย)" ด้านบนให้เอง · ใช้ในหนังสือส่งมอบงาน / ใบตรวจรับ / {ที่อยู่}</div>';
+    var q=w.querySelector('.tadq'),rs=w.querySelector('.tadr'),bs=w.querySelector('.tadb'),sel={};[].forEach.call(w.querySelectorAll('select.tads'),function(s){sel[s.getAttribute('data-k')]=s});bs.value=base0();
+    function fill(s,list,cur,ph){s.innerHTML='<option value="">— '+ph+' —</option>'+list.map(function(x,i){return'<option value="'+i+'"'+(x===cur?' selected':'')+'>'+hesc(x.n)+'</option>'}).join('')}
+    function zips(){var o={};(S.a?S.a.t:[]).forEach(function(x){o[x.z]=1});if(S.z)o[S.z]=1;return Object.keys(o).sort()}
+    function draw(){fill(sel.p,D,S.p,'เลือกจังหวัด');fill(sel.a,S.p?S.p.a:[],S.a,S.p?'เลือกอำเภอ / เขต':'เลือกจังหวัดก่อน');fill(sel.b,S.a?S.a.t:[],S.b,S.a?'เลือกตำบล / แขวง':'เลือกอำเภอก่อน');sel.z.innerHTML='<option value="">—</option>'+zips().map(function(z){return'<option'+(z===S.z?' selected':'')+'>'+z+'</option>'}).join('')}
+    function put(){inp.value=[bs.value.trim(),tadTxt(S.p,S.a,S.b,S.z)].filter(String).join(' ');inp.dispatchEvent(new Event('input',{bubbles:true}))}
+    sel.p.onchange=function(){S.p=sel.p.value===''?null:D[+sel.p.value];S.a=S.b=null;S.z='';draw();put()};
+    sel.a.onchange=function(){S.a=sel.a.value===''?null:S.p.a[+sel.a.value];S.b=null;var zs=zips();S.z=zs.length===1?zs[0]:'';draw();put()};
+    sel.b.onchange=function(){S.b=sel.b.value===''?null:S.a.t[+sel.b.value];S.z=S.b?S.b.z:'';draw();put()};
+    sel.z.onchange=function(){S.z=sel.z.value;put()};bs.oninput=put;
+    var IX=[];D.forEach(function(p){p.a.forEach(function(a){a.t.forEach(function(b){IX.push({p:p,a:a,b:b,s:tadNm(b.n+a.n+p.n+b.z),l:tadTxt(p,a,b,b.z)})})})});
+    q.oninput=function(){var v=tadNm(q.value);rs.innerHTML='';if(v.length<2)return;var hit=IX.filter(function(x){return x.s.indexOf(v)>=0}),r=function(x){return x.b.n.indexOf(v)===0?0:x.a.n.indexOf(v)===0?1:2};hit.sort(function(x,y){return r(x)-r(y)});
+      rs.innerHTML=hit.slice(0,40).map(function(x,i){return'<div data-i="'+i+'" style="padding:9px 6px;border-bottom:1px solid #EEF0F3;cursor:pointer;font-size:14px">'+hesc(x.l)+'</div>'}).join('')+(hit.length>40?'<div class="fh">… อีก '+(hit.length-40)+' รายการ · พิมพ์เพิ่มให้แคบลง</div>':'')+(hit.length?'':'<div class="fh">ไม่พบ</div>');
+      [].forEach.call(rs.querySelectorAll('div[data-i]'),function(d){d.onclick=function(){var x=hit[+d.getAttribute('data-i')];S.p=x.p;S.a=x.a;S.b=x.b;S.z=x.b.z;q.value='';rs.innerHTML='';draw();put()}})};
+    draw();
+  }).catch(function(){w.innerHTML='<div class="fh" style="margin:0;color:#C62828">โหลดรายการจังหวัดไม่สำเร็จ · พิมพ์ที่อยู่ในช่องด้านบนเองได้</div>'})}
 // v137: หัวข้อการอบรม ติ๊ก ✓ ได้ (บันทึกเป็น "✓ " หน้าบรรทัด → เล่มแสดง ☑)
 function hoTopics(root){var box=(root||document).querySelector('#ho_tchk');if(!box)return;var f=HO.f,a=(Array.isArray(f.topics)?f.topics:String(f.topics||'').split('\n')).filter(function(x){return String(x).trim()}),re=/^\s*(✓|\[x\])\s*/i;
   box.innerHTML='<div class="fh" style="margin-top:8px">✅ ติ๊กหัวข้อที่อบรมแล้ว (แสดงเป็น ☑ ในเล่ม)</div>';
